@@ -1,0 +1,80 @@
+{
+  "api_key": "${GO_PROXY_API_KEY}",
+  "host": "127.0.0.1",
+  "port": 3456,
+  "auth_mode": "config",
+
+  "opencode_go": {
+    "base_url": "https://opencode.ai/zen/go/v1/chat/completions",
+    "anthropic_base_url": "https://opencode.ai/zen/go/v1/messages",
+    "timeout_ms": 300000
+  },
+
+  "models": {
+    "glm-5.1": { 
+      "model_id": "glm-5.1", 
+      "endpoint": "openai" 
+    },
+    "glm-5": { 
+      "model_id": "glm-5", 
+      "endpoint": "openai" 
+    },
+    "kimi-k2.6": { 
+      "model_id": "kimi-k2.6", 
+      "endpoint": "openai" 
+    },
+    "kimi-k2.5": { 
+      "model_id": "kimi-k2.5", 
+      "endpoint": "openai" 
+    },
+    "deepseek-v4-pro": {
+      "model_id": "deepseek-v4-pro",
+      "endpoint": "openai",
+      "reasoning_effort": "high",
+      "thinking": {"type": "enabled", "budget_tokens": 10000}
+    },
+    "deepseek-v4-flash": {
+      "model_id": "deepseek-v4-flash",
+      "endpoint": "openai",
+      "reasoning_effort": "medium",
+      "thinking": {"type": "enabled", "budget_tokens": 5000}
+    },
+    "mimo-v2-pro": { 
+      "model_id": "mimo-v2-pro", 
+      "endpoint": "openai" 
+    },
+    "mimo-v2-omni": { 
+      "model_id": "mimo-v2-omni", 
+      "endpoint": "openai" 
+    },
+    "mimo-v2.5-pro": { 
+      "model_id": "mimo-v2.5-pro", 
+      "endpoint": "openai" 
+    },
+    "mimo-v2.5": { 
+      "model_id": "mimo-v2.5", 
+      "endpoint": "openai" 
+    },
+    "qwen3.6-plus": { 
+      "model_id": "qwen3.6-plus", 
+      "endpoint": "openai" 
+    },
+    "qwen3.5-plus": { 
+      "model_id": "qwen3.5-plus", 
+      "endpoint": "openai" 
+    },
+    "minimax-m2.7": { 
+      "model_id": "minimax-m2.7", 
+      "endpoint": "anthropic" 
+    },
+    "minimax-m2.5": { 
+      "model_id": "minimax-m2.5", 
+      "endpoint": "anthropic" 
+    }
+  },
+
+  "logging": {
+    "level": "info",
+    "requests": true
+  }
+}
