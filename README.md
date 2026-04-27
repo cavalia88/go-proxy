@@ -36,7 +36,7 @@ We decided to modify and simplify it for use with VS Code extensions like **Kilo
 **Option A — Using `make` (Linux/macOS with make installed):**
 
 ```bash
-git clone https://github.com/cavalia88/go-proxy.git
+git clone https://github.com/cavalia88/go-proxy
 cd go-proxy
 make build
 
@@ -48,7 +48,7 @@ make install
 **Option B — Using `go build` (cross-platform, no make required):**
 
 ```bash
-git clone https://github.com/cavalia88/go-proxy.git
+git clone https://github.com/cavalia88/go-proxy
 cd go-proxy
 
 # Windows
