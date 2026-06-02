@@ -125,6 +125,16 @@ The proxy forwards the Bearer token from each client request to OpenCode Go. Use
   "auth_mode": "passthrough"
 }
 ```
+### 6. Debugging
+
+Added `-d` / `--debug-dump` CLI flag to the `serve` command. Usage:
+
+```Windows
+go-proxy.exe serve --debug-dump
+```
+
+When enabled, raw upstream Anthropic request/response bodies are dumped to timestamped files in the `debug-dumps/` directory. No environment variable needed.
+
 
 ## Architecture
 

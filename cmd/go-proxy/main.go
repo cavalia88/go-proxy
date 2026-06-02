@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"go-proxy/internal/config"
+	"go-proxy/internal/debug"
 	"go-proxy/internal/server"
 
 	"github.com/spf13/cobra"
@@ -48,6 +49,7 @@ Configuration is stored at ~/.config/go-proxy/config.json`,
 func serveCmd() *cobra.Command {
 	var configPath string
 	var port int
+	var debugDump bool
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -66,6 +68,11 @@ func serveCmd() *cobra.Command {
 			// Override port if provided via flag.
 			if port != 0 {
 				cfg.Port = port
+			}
+
+			// Enable debug dump if requested via flag.
+			if debugDump {
+				debug.SetEnabled(true)
 			}
 
 			// Write PID file for process management.
@@ -97,6 +104,7 @@ func serveCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&configPath, "config", "c", "", "Path to config file")
 	cmd.Flags().IntVarP(&port, "port", "p", 0, "Override listen port")
+	cmd.Flags().BoolVarP(&debugDump, "debug-dump", "d", false, "Dump raw upstream request/response bodies to debug-dumps/ directory")
 
 	return cmd
 }
@@ -190,8 +198,10 @@ func modelsCmd() *cobra.Command {
 			fmt.Println("  mimo-v2-omni         OpenAI-compatible")
 			fmt.Println("  deepseek-v4-pro      OpenAI-compatible")
 			fmt.Println("  deepseek-v4-flash    OpenAI-compatible")
+			fmt.Println("  qwen3.7-max          Anthropic-compatible")
 			fmt.Println("  qwen3.6-plus         OpenAI-compatible")
 			fmt.Println("  qwen3.5-plus         OpenAI-compatible")
+			fmt.Println("  minimax-m3           Anthropic-compatible")
 			fmt.Println("  minimax-m2.7         Anthropic-compatible")
 			fmt.Println("  minimax-m2.5         Anthropic-compatible")
 			fmt.Println()
@@ -251,7 +261,7 @@ func getDefaultConfig() string {
       "model_id": "mimo-v2.5",
       "endpoint": "openai"
     },
-    "mimo-v2-pro": {
+	"mimo-v2-pro": {
       "model_id": "mimo-v2-pro",
       "endpoint": "openai"
     },
@@ -271,13 +281,21 @@ func getDefaultConfig() string {
       "reasoning_effort": "medium",
       "thinking": {"type": "enabled", "budget_tokens": 5000}
     },
+	"qwen3.5-plus": {
+      "model_id": "qwen3.5-plus",
+      "endpoint": "openai"
+    },
     "qwen3.6-plus": {
       "model_id": "qwen3.6-plus",
       "endpoint": "openai"
     },
-    "qwen3.5-plus": {
-      "model_id": "qwen3.5-plus",
-      "endpoint": "openai"
+    "qwen3.7-max": {
+      "model_id": "qwen3.7-max",
+      "endpoint": "anthropic"
+    },
+	"minimax-m3": {
+      "model_id": "minimax-m3",
+      "endpoint": "anthropic"
     },
     "minimax-m2.7": {
       "model_id": "minimax-m2.7",

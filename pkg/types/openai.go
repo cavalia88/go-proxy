@@ -27,7 +27,7 @@ type ChatCompletionRequest struct {
 //   - array: [{"type": "text", "text": "Hello"}]
 // We use json.RawMessage to accept both formats and forward them as-is.
 type ChatMessage struct {
-	Role             string          `json:"role"`
+	Role             string          `json:"role,omitempty"`
 	Content          json.RawMessage `json:"content"`
 	ReasoningContent *string         `json:"reasoning_content,omitempty"`
 	ToolCalls        []ToolCall      `json:"tool_calls,omitempty"`
@@ -112,7 +112,7 @@ type ChatCompletionResponse struct {
 // Choice represents a single choice in the response.
 type Choice struct {
 	Index        int         `json:"index"`
-	Message      ChatMessage `json:"message"`
+	Message      ChatMessage `json:"message,omitempty"`
 	FinishReason string      `json:"finish_reason,omitempty"`
 	Delta        ChatMessage `json:"delta,omitempty"`
 }

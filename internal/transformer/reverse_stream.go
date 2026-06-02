@@ -48,11 +48,12 @@ func (t *AnthropicStreamTransformer) TransformStream(reader io.Reader, writer io
 		}
 
 		// Skip non-data lines (comments, etc.)
-		if !strings.HasPrefix(line, "data: ") {
+		// Note: upstream may send either "data: {...}" or "data:{...}" (no space)
+		if !strings.HasPrefix(line, "data:") {
 			continue
 		}
 
-		data := strings.TrimPrefix(line, "data: ")
+		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
 		// Check for stream end
 		if data == "[DONE]" {
@@ -111,6 +112,14 @@ func (t *AnthropicStreamTransformer) TransformStream(reader io.Reader, writer io
 	if err := scanner.Err(); err != nil {
 		return t.response, fmt.Errorf("error reading stream: %w", err)
 	}
+
+	// Send [DONE] signal so downstream OpenAI-compatible clients know the stream is complete.
+	// Anthropic streams end with "message_stop", not "[DONE]", but OpenAI clients require it.
+	_, _ = fmt.Fprintf(writer, "data: [DONE]\n\n")
+	if flusher, ok := writer.(interface{ Flush() }); ok {
+		flusher.Flush()
+	}
+	t.logger.Info("stream complete", "sent", "[DONE]")
 
 	return t.response, nil
 }
@@ -243,6 +252,9 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 						},
 					},
 				})
+			case "signature_delta":
+				// Signature delta — no-op for OpenAI format. The signature is empty/non-actionable.
+
 			case "input_json_delta":
 				// Tool call arguments delta
 				if event.Index != nil {
@@ -298,7 +310,10 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 		}
 
 	case "message_stop":
-		// Stream is done - we already send [DONE] in the main loop
+		// Stream is done — the main loop sends [DONE] when the connection closes (EOF).
+
+	case "ping":
+		// Keep-alive ping from the upstream — silently ignore.
 
 	default:
 		// Unknown event type - log and skip

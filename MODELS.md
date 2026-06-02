@@ -16,8 +16,10 @@ This document lists all models available through `go-proxy` and their characteri
 | MiMo-V2-Omni | `mimo-v2-omni` | OpenAI | 128K | Multimodal |
 | DeepSeek V4 Pro | `deepseek-v4-pro` | OpenAI | 128K | Deep reasoning with thinking mode |
 | DeepSeek V4 Flash | `deepseek-v4-flash` | OpenAI | 128K | Fast reasoning |
+| Qwen3.7 Max | `qwen3.7-max` | Anthropic | 128K | Advanced reasoning |
 | Qwen3.6 Plus | `qwen3.6-plus` | OpenAI | 128K | Cost-efficient |
 | Qwen3.5 Plus | `qwen3.5-plus` | OpenAI | 128K | Budget tasks |
+| MiniMax M3 | `minimax-m3` | Anthropic | 1M | Latest MiniMax |
 | MiniMax M2.7 | `minimax-m2.7` | Anthropic | 1M | Long context |
 | MiniMax M2.5 | `minimax-m2.5` | Anthropic | 1M | Long context |
 
@@ -26,7 +28,7 @@ This document lists all models available through `go-proxy` and their characteri
 ⚠️ **Important:** Not all models use the same API endpoint!
 
 - **OpenAI-compatible** models use `/v1/chat/completions` — these work with direct passthrough in `go-proxy`
-- **Anthropic-compatible** models (MiniMax) use `/v1/messages` — these are automatically reverse-transformed by `go-proxy`
+- **Anthropic-compatible** models (Qwen3.7 Max, MiniMax) use `/v1/messages` — these are automatically reverse-transformed by `go-proxy`
 
 `go-proxy` handles routing automatically based on the `endpoint` field in your model config.
 
@@ -102,6 +104,10 @@ This ensures DeepSeek models work correctly with VS Code extensions that support
       "reasoning_effort": "medium",
       "thinking": {"type": "enabled", "budget_tokens": 5000}
     },
+    "qwen3.7-max": {
+      "model_id": "qwen3.7-max",
+      "endpoint": "anthropic"
+    },
     "qwen3.6-plus": {
       "model_id": "qwen3.6-plus",
       "endpoint": "openai"
@@ -109,6 +115,10 @@ This ensures DeepSeek models work correctly with VS Code extensions that support
     "qwen3.5-plus": {
       "model_id": "qwen3.5-plus",
       "endpoint": "openai"
+    },
+    "minimax-m3": {
+      "model_id": "minimax-m3",
+      "endpoint": "anthropic"
     },
     "minimax-m2.7": {
       "model_id": "minimax-m2.7",
@@ -133,7 +143,7 @@ This ensures DeepSeek models work correctly with VS Code extensions that support
 
 ## Anthropic Models
 
-MiniMax models (M2.5, M2.7) use the Anthropic Messages API endpoint. `go-proxy` automatically handles the reverse transformation:
+Qwen3.7 Max and MiniMax models (M2.5, M2.7, M3) use the Anthropic Messages API endpoint. `go-proxy` automatically handles the reverse transformation:
 
 - **Request:** OpenAI ChatCompletionRequest → Anthropic MessageRequest
 - **Response:** Anthropic MessageResponse → OpenAI ChatCompletionResponse

@@ -12,6 +12,7 @@ import (
 
 	"go-proxy/internal/client"
 	"go-proxy/internal/config"
+	"go-proxy/internal/debug"
 	"go-proxy/internal/middleware"
 	"go-proxy/internal/token"
 	"go-proxy/internal/transformer"
@@ -264,6 +265,11 @@ func (h *CompletionsHandler) handleAnthropicRequest(
 
 	isStreaming := openaiReq.Stream != nil && *openaiReq.Stream
 
+	// Dump the transformed request body for debugging
+	if dumpPath := debug.DumpRequest(modelConfig.ModelID, "anthropic", body); dumpPath != "" {
+		h.logger.Info("dumped Anthropic request", "path", dumpPath)
+	}
+
 	// Step 2: Send to Anthropic endpoint
 	resp, err := openCodeClient.SendAnthropicRequest(ctx, body, isStreaming)
 	if err != nil {
@@ -286,6 +292,11 @@ func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.Response
 	if err != nil {
 		h.sendError(w, http.StatusBadGateway, "failed to read upstream response", err)
 		return
+	}
+
+	// Dump raw upstream response for debugging
+	if dumpPath := debug.DumpResponse(modelID, "anthropic", body); dumpPath != "" {
+		h.logger.Info("dumped Anthropic response", "path", dumpPath)
 	}
 
 	// Parse Anthropic response
@@ -315,8 +326,22 @@ func (h *CompletionsHandler) handleAnthropicStreamingResponse(w http.ResponseWri
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.WriteHeader(http.StatusOK)
 
+	// Wrap response body with debug dump reader (upstream raw stream)
+	upstreamFilePath := debug.CreateStreamFile(modelID)
+	reader := debug.DumpReader(resp.Body, upstreamFilePath)
+	if upstreamFilePath != "" {
+		h.logger.Info("dumping upstream stream", "path", upstreamFilePath)
+	}
+
+	// Wrap writer with debug dump writer (downstream SSE output)
+	downstreamFilePath := debug.CreateDownstreamFile(modelID)
+	writer := debug.DumpWriter(w, downstreamFilePath)
+	if downstreamFilePath != "" {
+		h.logger.Info("dumping downstream stream", "path", downstreamFilePath)
+	}
+
 	streamTransformer := transformer.NewAnthropicStreamTransformer(modelID, h.logger)
-	_, err := streamTransformer.TransformStream(resp.Body, w)
+	_, err := streamTransformer.TransformStream(reader, writer)
 	if err != nil {
 		h.logger.Warn("error transforming Anthropic stream", "error", err)
 	}
