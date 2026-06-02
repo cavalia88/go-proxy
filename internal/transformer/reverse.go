@@ -133,11 +133,12 @@ func convertAssistantMessage(msg *types.ChatMessage) (json.RawMessage, error) {
 
 	// Add tool calls if present
 	for _, tc := range msg.ToolCalls {
+		input := sanitizeToolInput(tc.Function.Arguments)
 		blocks = append(blocks, types.ContentBlock{
 			Type:  "tool_use",
 			ID:    tc.ID,
 			Name:  tc.Function.Name,
-			Input: json.RawMessage(tc.Function.Arguments),
+			Input: input,
 		})
 	}
 
@@ -150,6 +151,21 @@ func convertAssistantMessage(msg *types.ChatMessage) (json.RawMessage, error) {
 	}
 
 	return json.Marshal(blocks)
+}
+
+// sanitizeToolInput ensures tool call arguments are valid JSON before converting
+// to Anthropic's input field. If arguments are empty or invalid JSON, returns
+// an empty JSON object ({}).
+func sanitizeToolInput(args string) json.RawMessage {
+	if args == "" {
+		return json.RawMessage("{}")
+	}
+	// Validate that args is valid JSON by unmarshaling into a map.
+	var dummy map[string]interface{}
+	if err := json.Unmarshal([]byte(args), &dummy); err != nil {
+		return json.RawMessage("{}")
+	}
+	return json.RawMessage(args)
 }
 
 // convertToolResultMessage converts an OpenAI tool result message to Anthropic tool_result content blocks.

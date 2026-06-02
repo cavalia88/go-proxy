@@ -74,7 +74,10 @@ type ContentPart struct {
 }
 
 // ToolCall represents a function call made by the model.
+// In streaming responses, Index is used to correlate deltas with the
+// same tool call across multiple chunks (OpenAI streaming format).
 type ToolCall struct {
+	Index    int          `json:"index,omitempty"`
 	ID       string       `json:"id"`
 	Type     string       `json:"type"`
 	Function FunctionCall `json:"function"`

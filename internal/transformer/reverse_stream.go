@@ -195,8 +195,9 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 								Delta: types.ChatMessage{
 									ToolCalls: []types.ToolCall{
 										{
-											ID:   block.ID,
-											Type: "function",
+											Index: startEvent.Index,
+											ID:    block.ID,
+											Type:  "function",
 											Function: types.FunctionCall{
 												Name:      block.Name,
 												Arguments: "",
@@ -258,7 +259,6 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 			case "input_json_delta":
 				// Tool call arguments delta
 				if event.Index != nil {
-					_ = *event.Index // tool call index
 					chunks = append(chunks, &types.ChatCompletionChunk{
 						ID:      t.response.ID,
 						Object:  "chat.completion.chunk",
@@ -270,6 +270,7 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 								Delta: types.ChatMessage{
 									ToolCalls: []types.ToolCall{
 										{
+											Index: *event.Index,
 											Function: types.FunctionCall{
 												Arguments: event.Delta.PartialJSON,
 											},
