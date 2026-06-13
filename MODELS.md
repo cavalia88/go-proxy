@@ -156,6 +156,40 @@ Qwen3.7 Max and MiniMax models (M2.5, M2.7, M3) use the Anthropic Messages API e
 
 Configure them in your model config with `"endpoint": "anthropic"`.
 
+## MiniMax M3 Tool-Calling Workarounds
+
+MiniMax M3 is prone to tool-calling and schema errors (for example, omitting required parameters such as `command` or hallucinating tool names like `invalid`). `go-proxy` applies a set of M3-specific mitigations that are **enabled by default** for `minimax-m3` and ignored for every other model.
+
+```json
+{
+  "minimax-m3": {
+    "model_id": "minimax-m3",
+    "endpoint": "anthropic",
+    "m3_strict_prompt": true,
+    "m3_tighten_schemas": true,
+    "m3_reasoning_split": true,
+    "m3_validate_tool_calls": true
+  }
+}
+```
+
+| Flag | Default | Effect |
+|------|---------|--------|
+| `m3_strict_prompt` | `true` | Appends a strict tool-calling instruction to the system prompt. |
+| `m3_tighten_schemas` | `true` | Adds empty `properties` and `additionalProperties: false` to loose `type: object` schemas. |
+| `m3_reasoning_split` | `true` | Injects `reasoning_split: true` at the top level of the upstream request body to keep reasoning separate from tool JSON. |
+| `m3_validate_tool_calls` | `true` | Removes or repairs malformed tool calls in the response: unknown tool names are dropped, missing required arguments are filled with safe defaults, and non-JSON arguments are repaired when possible. |
+
+To disable a workaround, set its flag to `false` in your config. To disable all M3 mitigations, set all four flags to `false`.
+
+### Troubleshooting MiniMax M3
+
+If you still see schema errors after enabling the defaults:
+
+1. Check the `debug-dumps/` request/response files to confirm the upstream is receiving the mitigations (strict system prompt, tightened schemas, `reasoning_split`).
+2. Try disabling `m3_reasoning_split` if the upstream provider rejects that field.
+3. Ensure the tool definitions in your client (Kilocode/Cline) have explicit, concrete schemas. Avoid generic `type: object` without declared properties.
+
 ---
 
 - [OpenCode Go Documentation](https://opencode.ai/docs/go/)

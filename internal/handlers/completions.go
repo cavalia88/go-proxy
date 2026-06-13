@@ -256,8 +256,14 @@ func (h *CompletionsHandler) handleAnthropicRequest(
 	// Apply model config overrides to Anthropic request
 	h.applyAnthropicModelConfig(anthropicReq, modelConfig)
 
-	// Marshal the Anthropic request
-	body, err := json.Marshal(anthropicReq)
+	// Apply MiniMax M3-specific request hardening (no-op for other models).
+	if err := transformer.ApplyM3RequestHardening(anthropicReq, openaiReq.Tools, modelConfig); err != nil {
+		h.sendError(w, http.StatusInternalServerError, "failed to apply M3 request hardening", err)
+		return
+	}
+
+	// Marshal the Anthropic request, adding M3-specific top-level fields if needed.
+	body, err := transformer.BuildM3RequestBody(anthropicReq, modelConfig)
 	if err != nil {
 		h.sendError(w, http.StatusInternalServerError, "failed to marshal Anthropic request", err)
 		return
@@ -280,14 +286,14 @@ func (h *CompletionsHandler) handleAnthropicRequest(
 
 	// Step 3: Transform response back to OpenAI format
 	if isStreaming {
-		h.handleAnthropicStreamingResponse(w, resp, modelConfig.ModelID)
+		h.handleAnthropicStreamingResponse(w, resp, modelConfig, openaiReq.Tools)
 	} else {
-		h.handleAnthropicNonStreamingResponse(w, resp, modelConfig.ModelID)
+		h.handleAnthropicNonStreamingResponse(w, resp, modelConfig, openaiReq.Tools)
 	}
 }
 
 // handleAnthropicNonStreamingResponse transforms an Anthropic non-streaming response to OpenAI format.
-func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.ResponseWriter, resp *http.Response, modelID string) {
+func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.ResponseWriter, resp *http.Response, modelConfig config.ModelConfig, originalTools []types.ToolDef) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		h.sendError(w, http.StatusBadGateway, "failed to read upstream response", err)
@@ -295,7 +301,7 @@ func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.Response
 	}
 
 	// Dump raw upstream response for debugging
-	if dumpPath := debug.DumpResponse(modelID, "anthropic", body); dumpPath != "" {
+	if dumpPath := debug.DumpResponse(modelConfig.ModelID, "anthropic", body); dumpPath != "" {
 		h.logger.Info("dumped Anthropic response", "path", dumpPath)
 	}
 
@@ -307,11 +313,14 @@ func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.Response
 	}
 
 	// Transform to OpenAI format
-	openaiResp, err := transformer.TransformAnthropicToOpenAI(&anthropicResp, modelID)
+	openaiResp, err := transformer.TransformAnthropicToOpenAI(&anthropicResp, modelConfig.ModelID)
 	if err != nil {
 		h.sendError(w, http.StatusInternalServerError, "failed to transform response", err)
 		return
 	}
+
+	// Apply MiniMax M3-specific response sanitization (no-op for other models).
+	transformer.SanitizeM3Response(openaiResp, originalTools, modelConfig)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -319,12 +328,14 @@ func (h *CompletionsHandler) handleAnthropicNonStreamingResponse(w http.Response
 }
 
 // handleAnthropicStreamingResponse transforms an Anthropic streaming response to OpenAI SSE format.
-func (h *CompletionsHandler) handleAnthropicStreamingResponse(w http.ResponseWriter, resp *http.Response, modelID string) {
+func (h *CompletionsHandler) handleAnthropicStreamingResponse(w http.ResponseWriter, resp *http.Response, modelConfig config.ModelConfig, originalTools []types.ToolDef) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.WriteHeader(http.StatusOK)
+
+	modelID := modelConfig.ModelID
 
 	// Wrap response body with debug dump reader (upstream raw stream)
 	upstreamFilePath := debug.CreateStreamFile(modelID)
@@ -341,6 +352,8 @@ func (h *CompletionsHandler) handleAnthropicStreamingResponse(w http.ResponseWri
 	}
 
 	streamTransformer := transformer.NewAnthropicStreamTransformer(modelID, h.logger)
+	streamTransformer.SetOriginalTools(originalTools)
+	streamTransformer.SetModelConfig(modelConfig)
 	_, err := streamTransformer.TransformStream(reader, writer)
 	if err != nil {
 		h.logger.Warn("error transforming Anthropic stream", "error", err)

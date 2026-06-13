@@ -10,15 +10,18 @@ import (
 	"strings"
 	"time"
 
+	"go-proxy/internal/config"
 	"go-proxy/pkg/types"
 )
 
 // AnthropicStreamTransformer converts Anthropic SSE events to OpenAI SSE chunks.
 // It reads from an Anthropic streaming response body and writes OpenAI-format SSE events.
 type AnthropicStreamTransformer struct {
-	model    string
-	logger   *slog.Logger
-	response *types.MessageResponse // Accumulated response state
+	model         string
+	logger        *slog.Logger
+	response      *types.MessageResponse // Accumulated response state
+	originalTools []types.ToolDef
+	modelConfig   config.ModelConfig
 }
 
 // NewAnthropicStreamTransformer creates a new stream transformer for the given model.
@@ -30,6 +33,16 @@ func NewAnthropicStreamTransformer(model string, logger *slog.Logger) *Anthropic
 			Role: "assistant",
 		},
 	}
+}
+
+// SetOriginalTools stores the original OpenAI tool definitions for M3 validation.
+func (t *AnthropicStreamTransformer) SetOriginalTools(tools []types.ToolDef) {
+	t.originalTools = tools
+}
+
+// SetModelConfig stores the model config so M3-specific flags can be read.
+func (t *AnthropicStreamTransformer) SetModelConfig(cfg config.ModelConfig) {
+	t.modelConfig = cfg
 }
 
 // TransformStream reads Anthropic SSE events from the reader and writes OpenAI SSE chunks to the writer.
@@ -112,6 +125,10 @@ func (t *AnthropicStreamTransformer) TransformStream(reader io.Reader, writer io
 	if err := scanner.Err(); err != nil {
 		return t.response, fmt.Errorf("error reading stream: %w", err)
 	}
+
+	// MiniMax M3: sanitize accumulated stream state and emit corrective chunks
+	// before closing the stream. No-op for other models.
+	t.emitM3StreamCorrections(writer)
 
 	// Send [DONE] signal so downstream OpenAI-compatible clients know the stream is complete.
 	// Anthropic streams end with "message_stop", not "[DONE]", but OpenAI clients require it.
@@ -322,4 +339,85 @@ func (t *AnthropicStreamTransformer) processEvent(data string, event *struct {
 	}
 
 	return chunks
+}
+
+// emitM3StreamCorrections sanitizes the accumulated MiniMax M3 stream response
+// and emits corrective SSE chunks before the stream closes. It is a no-op for
+// non-M3 models or when tool-call validation is disabled.
+func (t *AnthropicStreamTransformer) emitM3StreamCorrections(writer io.Writer) {
+	if !t.modelConfig.IsMiniMaxM3() || !t.modelConfig.M3ValidateToolCallsEnabled() {
+		return
+	}
+
+	// Capture original inputs so we can detect repairs.
+	originalInputs := make(map[string]string)
+	for _, block := range t.response.Content {
+		if block.Type == "tool_use" {
+			originalInputs[block.ID] = string(block.Input)
+		}
+	}
+
+	SanitizeM3StreamResponse(t.response, t.originalTools, t.modelConfig)
+
+	var toolIndex int
+	var corrections []types.ToolCall
+	var warningText string
+
+	for _, block := range t.response.Content {
+		switch block.Type {
+		case "tool_use":
+			if orig, ok := originalInputs[block.ID]; ok && orig != string(block.Input) {
+				corrections = append(corrections, types.ToolCall{
+					Index: toolIndex,
+					ID:    block.ID,
+					Type:  "function",
+					Function: types.FunctionCall{
+						Name:      block.Name,
+						Arguments: string(block.Input),
+					},
+				})
+			}
+			toolIndex++
+		case "text":
+			if strings.Contains(block.Text, "invalid and removed") && warningText == "" {
+				warningText = strings.TrimSpace(block.Text)
+			}
+		}
+	}
+
+	if len(corrections) == 0 && warningText == "" {
+		return
+	}
+
+	delta := types.ChatMessage{}
+	if len(corrections) > 0 {
+		delta.ToolCalls = corrections
+	}
+	if warningText != "" {
+		delta.Content = marshalContent(warningText)
+	}
+
+	chunk := &types.ChatCompletionChunk{
+		ID:      t.response.ID,
+		Object:  "chat.completion.chunk",
+		Created: time.Now().Unix(),
+		Model:   t.model,
+		Choices: []types.Choice{
+			{
+				Index: 0,
+				Delta: delta,
+			},
+		},
+	}
+
+	chunkJSON, err := json.Marshal(chunk)
+	if err != nil {
+		t.logger.Warn("failed to marshal M3 stream correction chunk", "error", err)
+		return
+	}
+	_, _ = fmt.Fprintf(writer, "data: %s\n\n", chunkJSON)
+	if flusher, ok := writer.(interface{ Flush() }); ok {
+		flusher.Flush()
+	}
+	t.logger.Debug("emitted M3 stream correction chunk", "tool_corrections", len(corrections), "warning", warningText != "")
 }

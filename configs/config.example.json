@@ -73,7 +73,11 @@
     },
     "minimax-m3": { 
       "model_id": "minimax-m3", 
-      "endpoint": "anthropic" 
+      "endpoint": "anthropic",
+      "m3_strict_prompt": true,
+      "m3_tighten_schemas": true,
+      "m3_reasoning_split": true,
+      "m3_validate_tool_calls": true
     },
     "minimax-m2.7": { 
       "model_id": "minimax-m2.7", 
