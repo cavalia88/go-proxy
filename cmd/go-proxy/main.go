@@ -190,6 +190,7 @@ func modelsCmd() *cobra.Command {
 			fmt.Println("  ────────────────────────────────────────────")
 			fmt.Println("  glm-5.1             OpenAI-compatible")
 			fmt.Println("  glm-5               OpenAI-compatible")
+			fmt.Println("  kimi-k2.7-code       OpenAI-compatible")
 			fmt.Println("  kimi-k2.6           OpenAI-compatible")
 			fmt.Println("  kimi-k2.5           OpenAI-compatible")
 			fmt.Println("  mimo-v2.5-pro       OpenAI-compatible")
@@ -243,6 +244,10 @@ func getDefaultConfig() string {
     },
     "glm-5": {
       "model_id": "glm-5",
+      "endpoint": "openai"
+    },
+    "kimi-k2.7-code": {
+      "model_id": "kimi-k2.7-code",
       "endpoint": "openai"
     },
     "kimi-k2.6": {

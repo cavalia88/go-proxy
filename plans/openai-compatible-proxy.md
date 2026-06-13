@@ -49,6 +49,7 @@ Based on MODELS.md and user-provided list:
 |-------|----------|----------|--------|------|
 | GLM-5.1 | `glm-5.1` | `/v1/chat/completions` | OpenAI | Passthrough |
 | GLM-5 | `glm-5` | `/v1/chat/completions` | OpenAI | Passthrough |
+| Kimi K2.7-Code | `kimi-k2.7-code` | `/v1/chat/completions` | OpenAI | Passthrough |
 | Kimi K2.6 | `kimi-k2.6` | `/v1/chat/completions` | OpenAI | Passthrough |
 | Kimi K2.5 | `kimi-k2.5` | `/v1/chat/completions` | OpenAI | Passthrough |
 | DeepSeek V4 Pro | `deepseek-v4-pro` | `/v1/chat/completions` | OpenAI | Passthrough* |
@@ -186,6 +187,7 @@ mux.HandleFunc("/health", healthHandler.HandleHealth)
   "models": {
     "glm-5.1": { "model_id": "glm-5.1", "endpoint": "openai" },
     "glm-5": { "model_id": "glm-5", "endpoint": "openai" },
+    "kimi-k2.7-code": { "model_id": "kimi-k2.7-code", "endpoint": "openai" },
     "kimi-k2.6": { "model_id": "kimi-k2.6", "endpoint": "openai" },
     "kimi-k2.5": { "model_id": "kimi-k2.5", "endpoint": "openai" },
     "deepseek-v4-pro": {

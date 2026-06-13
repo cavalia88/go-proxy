@@ -16,6 +16,7 @@ We decided to modify and simplify it for use with VS Code extensions like **Kilo
 |-------|----------|----------|-------|
 | GLM-5.1 | `glm-5.1` | OpenAI | Thinking/reasoning model |
 | GLM-5 | `glm-5` | OpenAI | Thinking model |
+| Kimi K2.7-Code | `kimi-k2.7-code` | OpenAI | Code-specific tasks |
 | Kimi K2.6 | `kimi-k2.6` | OpenAI | Best default choice |
 | Kimi K2.5 | `kimi-k2.5` | OpenAI | |
 | MiMo-V2.5-Pro | `mimo-v2.5-pro` | OpenAI | |
@@ -177,6 +178,10 @@ Override with `GO_PROXY_CONFIG` environment variable.
     },
     "glm-5": {
       "model_id": "glm-5",
+      "endpoint": "openai"
+    },
+    "kimi-k2.7-code": {
+      "model_id": "kimi-k2.7-code",
       "endpoint": "openai"
     },
     "kimi-k2.6": {

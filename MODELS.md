@@ -8,6 +8,7 @@ This document lists all models available through `go-proxy` and their characteri
 |-------|----------|----------|---------|----------|
 | GLM-5.1 | `glm-5.1` | OpenAI | 128K | Complex reasoning, architecture, tool operations |
 | GLM-5 | `glm-5` | OpenAI | 128K | Thinking/reasoning tasks |
+| Kimi K2.7-Code | `kimi-k2.7-code` | OpenAI | 128K | Code-specific tasks |
 | Kimi K2.6 | `kimi-k2.6` | OpenAI | 128K | General purpose (best default) |
 | Kimi K2.5 | `kimi-k2.5` | OpenAI | 128K | General purpose |
 | MiMo-V2.5-Pro | `mimo-v2.5-pro` | OpenAI | 128K | Balanced performance |
@@ -66,6 +67,10 @@ This ensures DeepSeek models work correctly with VS Code extensions that support
     },
     "glm-5": {
       "model_id": "glm-5",
+      "endpoint": "openai"
+    },
+    "kimi-k2.7-code": {
+      "model_id": "kimi-k2.7-code",
       "endpoint": "openai"
     },
     "kimi-k2.6": {

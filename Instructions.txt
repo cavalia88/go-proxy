@@ -1,0 +1,157 @@
+
+
+To test the new `go-proxy` app on Windows, you'll need to compile it first since we haven't created a pre-built binary yet. Here's how to do it:
+
+## Prerequisites
+
+1. **Install Go** (if not already installed):
+   - Download from https://go.dev/dl/
+   - Install Go 1.21 or later
+   - Verify with `go version` in Command Prompt
+
+2. **Get your OpenCode Go API key**:
+   - Sign up at https://opencode.ai if you haven't already
+   - Get your API key from https://opencode.ai/auth
+
+## Build and Run
+
+### Option 1: Build and run from source (recommended for testing)
+
+1. **Open Command Prompt** and navigate to the project directory:
+   ```cmd
+   cd f:\go-proxy
+   ```
+
+2. **Build the binary**:
+   ```cmd
+   go build -o go-proxy.exe ./cmd/go-proxy
+   ```
+   This creates `go-proxy.exe` in the current directory.
+
+3. **Initialize configuration**:
+   ```cmd
+   go-proxy.exe init
+   ```
+   This creates a default config at `%USERPROFILE%\.config\go-proxy\config.json`
+
+4. **Set your API key**:
+   ```cmd
+   set GO_PROXY_API_KEY=sk-opencode-your-actual-key-here
+   ```
+
+5. **Start the proxy**:
+   ```cmd
+   go-proxy.exe serve
+   ```
+
+   You should see output like:
+   ```
+   Starting go-proxy vdev
+   Listening on 127.0.0.1:3456
+   Auth mode: config
+   Forwarding to: https://opencode.ai/zen/go/v1/chat/completions
+
+   Configure Kilocode/Cline with:
+     Base URL: http://127.0.0.1:3456/v1
+     API Key: (from config)
+   ```
+
+### Option 2: Run directly without building
+
+```cmd
+cd f:\go-proxy
+set GO_PROXY_API_KEY=sk-opencode-your-actual-key-here
+go run ./cmd/go-proxy serve
+```
+
+## Test the API
+
+Once running, you can test with curl or PowerShell:
+
+### PowerShell test:
+```powershell
+# List models
+Invoke-RestMethod -Uri "http://127.0.0.1:3456/v1/models" | ConvertTo-Json
+
+# Test completion
+$body = @{
+    model = "kimi-k2.6"
+    messages = @(@{role = "user"; content = "Hello!"})
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://127.0.0.1:3456/v1/chat/completions" -Method POST -Body $body -ContentType "application/json"
+```
+
+### curl test (if you have curl):
+```cmd
+curl -X GET http://127.0.0.1:3456/v1/models
+
+curl -X POST http://127.0.0.1:3456/v1/chat/completions ^
+  -H "Content-Type: application/json" ^
+  -d "{\"model\":\"kimi-k2.6\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
+```
+
+## Configure Kilocode/Cline
+
+In your VS Code extension settings:
+- **Provider**: OpenAI Compatible
+- **Base URL**: `http://127.0.0.1:3456/v1`
+- **API Key**: (any value in config mode, or your actual key in passthrough mode)
+- **Model**: `kimi-k2.6` (or any model from the `/v1/models` list)
+
+The app is not pre-compiled yet - you need to build it yourself using `go build` as shown above. The build process takes just a few seconds and produces a single executable file.
+
+
+
+
+
+The `go-proxy.exe` binary has been compiled and is ready at `f:\go-proxy\go-proxy.exe`. Here's how to test it on Windows:
+
+## Quick Test Steps
+
+### 1. Initialize config
+```cmd
+cd f:\go-proxy
+go-proxy.exe init
+```
+This creates `%USERPROFILE%\.config\go-proxy\config.json`. Edit it to add your OpenCode Go API key, or use the env var below.
+
+### 2. Set your API key and start the server
+```cmd
+set GO_PROXY_API_KEY=sk-opencode-your-actual-key-here
+go-proxy.exe serve
+```
+
+### 3. Test the endpoints (in a separate terminal)
+
+**List models:**
+```cmd
+curl http://127.0.0.1:3456/v1/models
+```
+
+**Health check:**
+```cmd
+curl http://127.0.0.1:3456/health
+```
+
+**Test a completion:**
+```cmd
+curl -X POST http://127.0.0.1:3456/v1/chat/completions -H "Content-Type: application/json" -d "{\"model\":\"kimi-k2.6\",\"messages\":[{\"role\":\"user\",\"content\":\"Hello!\"}]}"
+```
+
+### 4. Configure Kilocode/Cline
+
+In your VS Code extension settings:
+- **Provider:** OpenAI Compatible
+- **Base URL:** `http://127.0.0.1:3456/v1`
+- **API Key:** Your OpenCode Go key (or any value if using `config` auth mode)
+- **Model:** `kimi-k2.6` (or any model from the list)
+
+### Alternative: Run without building
+```cmd
+cd f:\go-proxy
+set GO_PROXY_API_KEY=sk-opencode-your-key
+go run ./cmd/go-proxy serve
+```
+
+The binary at `f:\go-proxy\go-proxy.exe` is already built and verified working — `go-proxy.exe --version` returns `go-proxy version dev` and `go-proxy.exe models` lists all 14 models correctly.

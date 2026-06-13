@@ -19,6 +19,10 @@
       "model_id": "glm-5", 
       "endpoint": "openai" 
     },
+    "kimi-k2.7-code": { 
+      "model_id": "kimi-k2.7-code", 
+      "endpoint": "openai" 
+    },
     "kimi-k2.6": { 
       "model_id": "kimi-k2.6", 
       "endpoint": "openai" 
